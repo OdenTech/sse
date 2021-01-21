@@ -76,6 +76,10 @@ func (s *Server) RemoveStream(id string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	s.removeStream(id)
+}
+
+func (s *Server) removeStream(id string) {
 	if s.Streams[id] != nil {
 		s.Streams[id].close()
 		delete(s.Streams, id)
@@ -86,8 +90,16 @@ func (s *Server) RemoveStream(id string) {
 func (s *Server) StreamExists(id string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	stream := s.Streams[id]
+	if stream == nil {
+		return false
+	}
+	if len(stream.subscribers) == 0 {
+		s.removeStream(id)
+		return false
+	}
 
-	return s.Streams[id] != nil
+	return true
 }
 
 // Publish sends a mesage to every client in a streamID
